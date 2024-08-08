@@ -1,26 +1,41 @@
-import {
-    PostContainer,
-    PostContent,
-    PostHeader
-} from "../styles"
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-export const PostCard = () => {
+import {
+    PostCardContainer,
+    PostCardContent,
+    PostCardHeader
+} from "../styles"
+import { issueProps } from '..';
+import { Link } from 'react-router-dom';
+
+interface postCardProps {
+  issue: issueProps,
+  userName: string,
+  repoName: string,
+}
+
+export const PostCard = ({ issue, userName, repoName }: postCardProps) => {
+  const formattedDate = formatDistanceToNow(issue.created_at, {
+    addSuffix: true,
+    locale: ptBR,
+  });
+
+  const checkTextLength = (text: string) => {
+    return text.substring(0, 30) + '...';
+  }
+  
   return (
-    <PostContainer>
-        <PostHeader>
-            <h2>JavaScript data types and data structures</h2>
-            <span>Há 1 dia</span>
-        </PostHeader>
-        <PostContent>
-            <p>
-            Programming languages all have built-in data structures, but these often differ from one language to another. This article attempts to list the built-in data structures available in JavaScript and what properties they have. These can be used to build other data structures. Wherever possible, comparisons with other languages are drawn.
-            Dynamic typing
-            JavaScript is a loosely typed and dynamic language. Variables in JavaScript are not directly associated with any particular value type, and any variable can be assigned (and re-assigned) values of all types:
-            let foo = 42; // foo is now a number
-            foo = 'bar'; // foo is now a string
-            foo = true; // foo is now a boolean
-            </p>
-        </PostContent>
-    </PostContainer>
+    <Link to={`/post/${issue.number}?user=${userName}&repo=${repoName}`}>
+      <PostCardContainer>
+          <PostCardHeader>
+              <h2>{checkTextLength(issue.title)}</h2>
+              <span>{formattedDate}</span>
+          </PostCardHeader>
+          <PostCardContent>
+              <p>{issue.body}</p>
+          </PostCardContent>
+      </PostCardContainer>
+    </Link>
   )
 }

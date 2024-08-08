@@ -2,13 +2,17 @@ import {
   useEffect,
   useState
 } from "react";
-import { useForm } from "react-hook-form";
+import {
+  SubmitHandler,
+  useForm
+} from "react-hook-form";
 import { z } from "zod";
 
 import { Profile } from "./Components/Profile";
 
 import {
   BaseInput,
+  EmptyIssues,
   HomeContainer,
   HomeContent,
   HomeWrapper,
@@ -17,12 +21,12 @@ import {
 import { PostCard } from "./Components/PostCard";
 import { api } from "../../Lib/axios";
 
-const publicationsFormSchema = z.object({
-  publications: z.string().min(1),
+const SearchFormSchema = z.object({
+  query: z.string().min(1).optional(),
   repo: z.string().min(1),
 });
 
-type publicationsFormProps = z.infer<typeof publicationsFormSchema>
+type searchFormProps = z.infer<typeof SearchFormSchema>
 
 export interface userProps {
   avatar_url: string,
@@ -30,6 +34,14 @@ export interface userProps {
   html_url: string,
   login: string,
   name: string,
+}
+
+export interface issueProps {
+  title: string,
+  body: string,
+  number: number,
+  created_at: string,
+  repository_url: string,
 }
 
 export const Home = () => {
@@ -40,29 +52,44 @@ export const Home = () => {
       isSubmitting,
       errors
     }
-   } = useForm<publicationsFormProps>({
-
+  } = useForm<searchFormProps>({
+    defaultValues: {
+      query: '',
+      repo: ''
+    }
   });
 
   const [user, setUser] = useState<userProps>();
+  const [issues, setIssues] = useState<issueProps[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [repoName, setRepoName] = useState<string>('');
 
   useEffect(() => {
       const fetchUser = async () => {
           const response = await api.get('/users/luisMorato');
+          const { data } = response;
 
-          setUser(response.data);
+          setUser(data);
       }
 
       fetchUser();
   }, []);
 
-  const SubmitSearchQuery = async (data: publicationsFormProps) => {
-    const { publications, repo } = data;
-    const url = `/search/issues?q=${publications}repo:${repo}`;
+  const submitSearchQuery: SubmitHandler<searchFormProps> = async (data: searchFormProps) => {
+    const { query, repo } = data;
 
+    const url = `/search/issues?q=${query} repo:${user?.login}/${repo}`;
     const response = await api.get(url);
 
-    console.log(response);
+    const { items, total_count } = response.data;
+    const { repository_url }: { repository_url: string } = items[0];
+
+    const lastSlashIndex = repository_url.lastIndexOf('/');
+    const slicedRepoName = repository_url.slice(lastSlashIndex + 1, repository_url.length);
+    setRepoName(slicedRepoName);
+
+    setTotalCount(total_count);
+    setIssues(items);
   }
   
   return user && (
@@ -71,41 +98,56 @@ export const Home = () => {
         user={user}
       />
       <HomeWrapper>
-        <form onSubmit={handleSubmit(SubmitSearchQuery)}>
+        <form onSubmit={handleSubmit(submitSearchQuery)}>
           <InputWrapper>
             <label htmlFor='repo'>Repositório</label>
             <BaseInput
               id='repo'
               type='text'
               placeholder="Buscar Repositório"
-              title="Pressione Enter Para Pesquisar"
               disabled={isSubmitting}
-              className={`${errors['repo'] ? 'invalid' : ''}`}
+              className={errors['repo'] ? 'invalid' : ''}
               { ...register('repo', { required: true }) }
             />
           </InputWrapper>
           <InputWrapper>
             <div>
-              <label htmlFor='publications'>Publicações</label>
-              <span>6 publicações</span>
+              <label htmlFor='query'>Publicações</label>
+              <span>{totalCount > 0 ? `${totalCount} publicações` : "Nenhuma Publicação"}</span>
             </div>
             <BaseInput
-              id='publications'
+              id='query'
               type='text'
-              placeholder="Buscar conteúdo"
-              title="Pressione Enter Para Pesquisar"
+              placeholder="Filtrar conteúdo"
               disabled={isSubmitting}
-              className={`${errors['publications'] ? 'invalid' : ''}`}
-              { ...register('publications', { required: true }) }
+              className={errors['query'] ? 'invalid' : ''}
+              { ...register('query') }
             />
           </InputWrapper>
+          <button 
+            type="submit"
+            disabled={isSubmitting}
+          >pesquisar
+          </button>
         </form>
-        <HomeContent>
-            {Array.from({ length: 6 }).map((_, index) => (
-              <PostCard
-                key={index}
-              />
-            ))}
+        <HomeContent
+          issuesLength={issues.length} 
+        >
+            {issues.length > 0 ?
+              issues.map((issue) => (
+                <PostCard
+                  key={issue.number}
+                  issue={issue}
+                  userName={user.login}
+                  repoName={repoName}
+                />
+              ))
+              : (
+                <EmptyIssues>
+                  <span>Nenhuma Publicação</span>
+                </EmptyIssues>
+              )
+            }
         </HomeContent>
       </HomeWrapper>
     </HomeContainer>

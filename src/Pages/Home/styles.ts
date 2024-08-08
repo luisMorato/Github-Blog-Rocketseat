@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { css } from "styled-components";
 
 export const HomeContainer = styled.div`
     display: flex;
@@ -125,6 +126,28 @@ export const HomeWrapper = styled.div`
         display: flex;
         flex-direction: column;
         gap: 2rem;
+
+        button[type='submit'] {
+            background-color: ${({ theme }) => theme.Input};
+            border: 1px solid transparent;
+            border-radius: 6px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            align-self: flex-end;
+
+            margin-top: -1rem;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+
+            width: fit-content;
+
+            &:disabled {
+                cursor: not-allowed;
+                opacity: 0.8;
+            }
+        }
     }
 `;
 
@@ -163,7 +186,7 @@ export const BaseInput = styled.input`
         opacity: 0.8;
     }
 
-    &:invalid {
+    &.invalid {
         border: 1px solid ${({ theme }) => theme.InputError};
     }
 
@@ -172,10 +195,24 @@ export const BaseInput = styled.input`
     }
 `;
 
-export const HomeContent = styled.main`
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2rem;
+interface homecontentProps {
+    issuesLength: number
+}
+
+export const HomeContent = styled.main<homecontentProps>`
+    ${({ issuesLength }) => {
+        if(issuesLength > 0){
+            return css`
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 2rem;
+            `;
+        } else {
+            return css`
+                display: block;
+            `;
+        }
+    }}
 
     @media (max-width: 640px) {
         display: flex;
@@ -184,7 +221,7 @@ export const HomeContent = styled.main`
     }
 `;
 
-export const PostContainer = styled.section`
+export const PostCardContainer = styled.section`
     background-color: ${({ theme }) => theme.Post};
     border-radius: 10px;
     padding: 2rem;
@@ -196,7 +233,7 @@ export const PostContainer = styled.section`
     max-width: 26rem;
 `;
 
-export const PostHeader = styled.header`
+export const PostCardHeader = styled.header`
     display: flex;
     align-items: baseline;
     justify-content: space-between;
@@ -212,9 +249,14 @@ export const PostHeader = styled.header`
         color: ${({ theme }) => theme.Span};
         white-space: nowrap;
     }
+
+    @media (max-width: 900px) {
+        display: flex;
+        flex-direction: column;
+    }
 `;
 
-export const PostContent = styled.main`
+export const PostCardContent = styled.main`
     p {
         overflow: hidden;
         text-overflow: ellipsis;
@@ -223,5 +265,19 @@ export const PostContent = styled.main`
         font-size: 1rem;
 
         max-height: 7rem;
+    }
+`;
+
+export const EmptyIssues = styled.div`
+    display: flex;
+    justify-content: center;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
+
+    width: 100%;
+
+    span {
+        font-weight: bold;
+        font-size: 1.5rem;
     }
 `;
